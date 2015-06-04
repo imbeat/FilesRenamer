@@ -1,4 +1,5 @@
-﻿using System;
+﻿using System.Threading.Tasks;
+using NLog;
 
 namespace FilesRenamer.Console
 {
@@ -6,25 +7,27 @@ namespace FilesRenamer.Console
     {
         private static void Main(string[] args)
         {
-            var directoryPath = GetFolderParh(args);
+            string rootDirectory;
+            if (!TryGetFolderPath(args, out rootDirectory))
+            {
+                return;
+            }
             var fileRenamer = new FileRenamer();
-            fileRenamer.RenameFilesInDirectory(directoryPath);
+            var task = Task.Factory.StartNew(()=>fileRenamer.RenameFilesInDirectory(rootDirectory));
+            task.Wait();
         }
-
-
-        private static string GetFolderParh(string[] args)
+        
+        private static bool TryGetFolderPath(string[] args, out string rootDirectory)
         {
-            string folderPath = null;
-            if (args.Length < 1)
+            rootDirectory = null;
+            if (args.Length < 1 || args[0] == "/?")
             {
-                System.Console.WriteLine("Не заданы аргументы");
-                throw new ArgumentException("Не заданы аргументы");
+                System.Console.WriteLine(@"Задайте первым аргументом путь к папке. Например, "">FileRenamer.exe c:\MyPhotos""");
+                LogManager.GetCurrentClassLogger().Warn("Заданы неверные аргументы или задан аргумент справки");
+                return false;
             }
-            if (args.Length == 1)
-            {
-                folderPath = args[0];
-            }
-            return folderPath;
+            rootDirectory = args[0];
+            return true;
         }
     }
 }
